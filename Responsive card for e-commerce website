@@ -1,0 +1,156 @@
+import React, { useState } from "react";
+import ImageHelper from "./helper/ImageHelper";
+import { useEffect } from "react";
+import { Redirect } from "react-router-dom";
+import { addItemToCart, removeItemFromCart } from "./helper/CartHelper";
+
+
+const Card = ({ 
+  product, 
+  addtoCart = true, 
+  removeFromCart = false, 
+  setReload = f => f ,  //function(f){return f}
+  reload = undefined 
+  }) => {
+
+  const [redirect, setRedirect] = useState(false);
+
+
+  const cartName = product.name;
+  const cartDescription = product.description;
+  const cartPrice = product.price;
+
+  const addToCart = () => {
+    addItemToCart(product, () => {
+      setRedirect(true);
+    });
+  }
+
+  const getRedirect = (redirect) =>{
+    if(redirect){
+      return <Redirect to="/cart" />
+    }
+  }
+
+  const showAddToCart = addtoCart => {
+    return (
+      addtoCart && (
+        <button
+          onClick={addToCart}
+          className="btn btn-block btn-outline-success mt-2 mb-2"
+        >
+          Add to Cart
+        </button>
+      )
+    );
+  };
+
+  const showRemoveFromCart = removeFromCart => {
+    return (
+      removeFromCart && (
+        <button
+          onClick={() => {
+            removeItemFromCart(product._id);
+            setReload(!reload);
+          }}
+          className="btn btn-block btn-outline-danger mt-2 mb-2"
+        >
+          Remove from cart
+        </button>
+      )
+    );
+  };
+  return (
+    <div className="card text-white bg-dark border border-info ">
+      <div className="card-header lead">{cartName}</div>
+      <div className="card-body">
+        {getRedirect(redirect)}
+        <ImageHelper product={product} />
+        <p className="lead bg-success font-weight-normal text-wrap">
+          {cartDescription}
+        </p>
+        <p className="btn btn-success rounded  btn-sm px-4">$ {cartPrice}</p>
+        <div className="row">
+          <div className="col-12">{showAddToCart(addtoCart)}</div>
+          <div className="col-12">{showRemoveFromCart(removeFromCart)}</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Card;
+
+
+//image helper file
+import React from "react";
+import { API } from "../../backend";
+
+const ImageHelper = ({ product }) => {
+  const imageurl = product
+    ? `${API}/product/photo/${product._id}`
+    : `https://images.pexels.com/photos/3561339/pexels-photo-3561339.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940`;
+  return (
+    <div className="rounded border border-success p-2">
+      <img
+        src={imageurl}
+        alt="photo"
+        style={{ maxHeight: "100%", maxWidth: "100%" }}
+        className="mb-3 rounded"
+      />
+    </div>
+  );
+};
+
+export default ImageHelper;
+
+//cart helper file
+export const addItemToCart = (item, next) => {
+    let cart = [];
+    if (typeof window !== undefined) {
+      if (localStorage.getItem("cart")) {
+        cart = JSON.parse(localStorage.getItem("cart"));
+      }
+      cart.push({
+        ...item,
+        count: 1
+      });
+      localStorage.setItem("cart", JSON.stringify(cart));
+      next();
+    }
+};
+  
+export const loadCart = () => {
+    if (typeof window !== undefined) {
+      if (localStorage.getItem("cart")) {
+        return JSON.parse(localStorage.getItem("cart"));
+      }
+    }
+};
+
+ 
+export const removeItemFromCart = productId => {
+  let cart = [];
+  if (typeof window !== undefined) {
+    if (localStorage.getItem("cart")) {
+      cart = JSON.parse(localStorage.getItem("cart"));
+    }
+    cart.map((product, i) => {
+      if (product._id === productId) {
+        cart.splice(i, 1);
+      }
+    });
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }
+  return cart;
+};
+
+
+export const cartEmpty = next => {
+  if (typeof window !== undefined) {
+    localStorage.removeItem("cart");
+    let cart = [];
+    localStorage.setItem("cart", JSON.stringify(cart));
+    next();
+  }
+};
